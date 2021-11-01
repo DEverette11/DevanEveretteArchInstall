@@ -1,0 +1,166 @@
+Began with downloading the .iso file from the Arch wiki 
+Created the Arch VM inside of VMWare using all of the default settings EXCEPT FOR changing the Memory to 2GB and the storage to 20GB.
+Once the VM is created, I edited the .vmx file and, on the second line, I added the line 'firmware="efi"' to allow the VM to boot into UEFI by default
+# loadkeys us
+Ran the "loadkeys" command to establish a keyboard interface for the Arch VM
+
+SETTING UP THE NETWORK
+# ls /sys/firmware/efi/efivars
+Ran this command to verify and see if the Arch VM has successfully launched in UEFI mode, which successfully displayed the directory, meaning that it did boot correctly into UEFI
+# ls /sys/class/net
+Used this command to show what internet connections I had currently running which I got the result "ens33  Io", which I can assume that the ens33 is my wanted internet connection
+# ip link set ens33 up
+This command allowed my internet connection to be up and running
+# ping archlinux.org
+I used this command to check and see if my internet was working, which it was, but I created the issue of pinging archlinux.com endlessly...
+# ping -c 3 archlinux.org
+After restarting from a previous snapshot, I ran the previous commands again to make sure my internet was online and pinged archlinux.org only 3 times so it wouldn't run endlessly. But it did ping successfully.
+# pacman -S networkmanager
+Instal networkmanager inside of the /mnt directory
+# systemctl enable NetworkManager.service
+enable the network manager so that my device can connect to the internet
+
+
+SETTING TIMEZONE
+# timedatectl list-timezone 
+Used this command to begin setting my correct timezone. I found the US/Central timezone selection so I will use this timezone for my Arch VM
+# timedatectl set-timezone US/Central
+I used this command to set the timezone for my VM, which has now set the local time to the US Central timezone
+# timedatectl set-ntp true
+This command has synchronized the system clock together to have the universal time, rtc time, and the local time all set together for a more accurate time setting for my VM
+
+DISK PARTITION & FILE FORMATTING
+# fdisk -l
+Checked what disks were implemented using this command so I can find what disk is needed to be partitioned
+# fdisk /dev/sda
+Began the process to creating a partition for EFI at sda1 and the root at sda2
+# n (New partition)
+# p (Primary partition)
+# 1 (Create Partition 1)
+# 2048 (Minimum space) 
+# 41943039 (Maximum space)
+Running those inputs created a partition at position 1 with a size of 20GB, but that is not what I wanted for the EFI size
+# d (Delete partition)
+I deleted the partition that I have just created. And will begin to create another partition soon
+# n 
+# p
+# 1
+# 2048
+# +500M (Sets the maximum size of partition 500mb higher than the minimum)
+This has successfully created a partition that is the correct size for the EFI partition
+# n 
+# p
+# 2 (Creates partition 2)
+# 1026048 
+# 41943039
+This has created the second partition which will be used for the the rest of the Arch VM
+# t (Change partition type)
+# 1 (Select partition 1)
+# L (Lists all types of partitions)
+# EF (Sets the partition to type UEFI)
+This list of commands set the first partition to the UEFI partition 
+# q
+I have quit the disk partitioning program... without saving. 
+After reloading my snapshot to save me some time, I use # w to SAVE the partitioning to my disk
+# mkfs.ext4 /dev/sda2
+I have created the ext4 file format on the partition holding the main VM file system
+# mount /dev/sda2 /mnt
+I have mounted the partition sda2 
+# mkdir /mnt/efi
+Created a directory for the mount of the efi partition
+# mount /dev/sda1 /mnt/efi
+After doing this command, I get an error saying that this is unavailable due to the file systems being different so
+# mkfs.ext4 /dev/sda1
+I set the sda1 partition to the ext4 file system format, then I mount sda1 to /mnt/efi and it succeeds to format to .ext4.
+I learn later that this file system was incorrect for the efi system. So I had to return to a previous snapshot to change the file system of sda1
+# mkfs.fat -F32 /dev/sda1
+THIS is the command I should have ran previously. This makes the efi partition a fat file system, correct for the efi partition.
+
+
+INSTALLATION (ALSO DAY 2)
+# pacstrap /mnt base linux linux-firmware
+So upon starting my Arch VM back up, I attempted to begin where I left off, which was installing packages for base linux and I noticed I would get an error saying that "partition is too full"
+I noticed this shouldnt be happening, as my partition has 19.5GB on it, so I looked up a solution and realized that my mounts were not set when I reopened the program again. So I remounted my partitions and the base linux installed perfectly fine.
+# pacstrap /mnt man-pages
+I have installed man pages to my Arch VM because they're useful.
+# pacstrap /mnt man-db
+
+#pacstrap /mnt vim tree
+installed the vim and tree packages into the mnt directory
+
+INSTALATION (inside of /mnt)
+# pacman -S openssh sudo
+Installs openssh and sudo content into the root directory
+
+CONFIGURATION
+# genfstab -U /mnt >> /mnt/etc/fstab
+
+# arch-chroot /mnt
+Changed root into /mnt
+# ln -sf /usr/share/zoneinfo/US/Central /etc/localtime
+
+# hwclock --systohc
+
+# touch /etc/locale.conf /etc/vconsole.conf /etc/hostname
+Created the files "locale.conf" "vconsole.conf" and "hostname" under /etc
+# echo LANG=en_US.UTF-8 > /etc/locale.conf
+appens "LAND=en_US.UTF-8" to the locale.conf file
+# echo KEYMAP=us > /etc/vconsole.conf
+appends "KEYMAP=us" to the vconsole.conf file
+# echo dje > /etc/hostname
+appends "dje" to the hostname file
+# passwd
+Set the password for root
+
+INSTALLING GRUB
+# pacman -S grub efibootmgr intel-ucode
+Installs grub, intel-ucode, and efibootmgr to the /mnt directory
+# grub-install --target=x86_64-efi --bootloader-id=GRUB --efi-directory=/mnt/efi
+
+# grub-mkconfig -o /mnt/efi/grub/grub.cfg
+Creates the config file for grub to load once booted
+
+INSTALLING DESKTOP (GNOME) ENVIRONMENT
+# pacman -S xorg gnome gnome-extra
+Installs xorg and gnome with extras to the root directory to have a desktop environment once we reboot the system
+#systemctl enable gdm.service
+This enables the arch vm to launch with the desktop environment
+
+FINAL DETAILS BEFORE LAUNCHING ARCH VM
+# useradd -m dje
+# useradd -m sal
+# useradd -m codi
+Creates users and home directories for the users sal, codi, and dje
+# passwd dje
+# passwd sal
+# passwd codi
+Prompts to create passwords for the users codi, sal, and dje
+# passwd -e codi
+# passwd -e sal
+Forces the users sal and codi to change their password upon next login
+#exit
+#reboot
+exits the chroot and reboots the system to see if my vm has installed correctly
+
+THE ARCH VM
+Upon launch it takes me to the grub terminal, which all I see is grub> indicating that my desktop is not launching automatically so I must put in a command to make it start
+grub> configfile (hd0,1)/efi/grub/grub.cfg
+This command points grub to the config file so that it can correctly launch the arch vm
+It successfully launches the gnome desktop environment and shows that it has internet connection with the users dje, sal, and codi
+Upon launching, I log into root to install and change some settings
+# pacman -S chromium
+I install chromium so that I can have a chrome internet browser, as I prefer to use a chrome internet browser
+# alias c='clear'
+# alias e='exit'
+# alias goRoot='sudo su'
+# alias goHome='cd /home/dje'
+Created all of the aliases I use in my program
+In the /.zshrc file, I added the line
+PROMPT='%F{blue}%n@%1~%f:%# '
+Which created the format of the shell, giving the name of the user and the location of the user a blue color, while showing if the user is in root mode or not
+Even though I edited the /.zshrc file, it doesn't want to apply it automatically so when I launch a terminal or change users, I input
+# source /.zshrc 
+That will turn the terminal into the format that I have selected for it and adds the aliases I have created.
+
+
+
