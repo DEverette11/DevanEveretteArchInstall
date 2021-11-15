@@ -1,0 +1,37 @@
+INSTALLING DOCKER
+# sudo apt update
+This command updates apt
+# sudo apt install docker.io
+This command installs docker (not compose) in order for us to use it
+# sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+This command doesn't work due to curl not being installed so I install curl next in order for it to work
+# sudo apt install curl
+This command installs curl onto my ubuntu vm
+# sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+Now this command work successfully
+# sudo chmod +x /usr/local/bin/docker-compose
+This command allows docker-compose to execute files
+INSTALLING PI-HOLE
+(Guided by https://www.geeksforgeeks.org/create-your-own-secure-home-network-using-pi-hole-and-docker/ )
+# sudo systemctl start docker
+This starts the docker application for me to start pulling pihole
+# sudo docker pull pihole/pihole
+This pulls pihole using docker
+# sudo systemctl stop systemd-resolved.service
+# sudo systemctl stop systemd-resolved
+These stops the resolved system service in order for docker compose to work successfully 
+# sudo systemctl disable systemd-resolved.service
+# sudo systemctl disable systemd-resolved
+These commands disables the same services we just stopped in order for docker compose to work 
+# sudo nano /etc/resolv.conf
+In this file, we turned dns to 8.8.8.8 in order for pihole to work correctly
+# sudo nano docker-compose.yml
+On step 4 in the website, I copied and pasted the lines of code and information into the docker-compose.yml file
+# sudo docker-compose up -d
+This launches pihole file 
+# sudo docker exec -it pihole bash
+This command moves us into the pihole container for us to start it
+# pihole -a -p
+Set the password for pihole account
+After setting the pihole account password, I went to http://localhost/admin/ to see if the pihole installed correctly, and which I see the pihole screen, indicating that it installed correctly
+I will include the screenshot of the pihole interface with the submission.
