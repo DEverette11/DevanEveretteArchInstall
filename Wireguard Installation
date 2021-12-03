@@ -11,27 +11,66 @@
    
    
 # apt-cache policy docker-ce
-
+//Installs the docker certificate
 
 # sudo apt install docker-ce -y
 
 
 # sudo curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-Installs docker compose onto the vm
+//Installs docker compose onto digitalocean droplet
 
 # sudo chmod +x /usr/local/bin/docker-compose
-Gives the docker-compose directory an open executable for all
+//Gives the docker-compose directory an open executable for all
 
 # mkdir -p ~/wireguard 
 # mkdir -p ~/wireguard/config
-Creates directories for the wireguard app
+//Creates directories for the wireguard app
 
 # nano ~/wireguard/docker-compose.yml
-Edits the docker-compose.yml file in the wireguard directory. 
+//Edits the docker-compose.yml file in the wireguard directory. 
+
+  GNU nano 4.8                           /root/wireguard/docker-compose.yml                                      
+version: '3.8'
+services:
+  wireguard:
+    container_name: wireguard
+    image: linuxserver/wireguard
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=US/Central
+      - SERVERURL=128.199.12.145
+      - SERVERPORT=51820
+      - PEERS=pc1,pc2,phone1
+      - PEERDNS=auto
+      - INTERNAL_SUBNET=10.0.0.0
+    ports:
+      - 51820:51820/udp
+    volumes:
+      - type: bind
+        source: ./config/
+        target: /config/
+      - type: bind
+        source: /lib/modules
+        target: /lib/modules
+    restart: always
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+//The information put into the docker-compose.yml file
 
 # cd ~/wireguard/
 # docker-compose up -d
-
+//Laucnhes the wireguard docker application
 
 # docker-compose logs -f wireguard
-Views the logs of wireguard, holding the qr codes to connect my vpn to my phone and computer.
+//Views the logs of wireguard, holding the qr codes to connect my vpn to my phone and computer.
+
+# nano ~/wireguard/config/peer_pc1/peer_pc1.conf
+//Looks inside of the config file to copy the contents and give it to wireguard on my pc
+
+*LINKS FOLLOWED*
+https://thematrix.dev/setup-wireguard-vpn-server-with-docker/
+https://thematrix.dev/install-docker-and-docker-compose-on-ubuntu-20-04/
